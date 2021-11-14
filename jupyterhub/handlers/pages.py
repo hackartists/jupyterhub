@@ -12,12 +12,10 @@ from tornado import web
 from tornado.httputil import url_concat
 
 from .. import __version__
-from ..metrics import SERVER_POLL_DURATION_SECONDS
-from ..metrics import ServerPollStatus
+from ..metrics import SERVER_POLL_DURATION_SECONDS, ServerPollStatus
 from ..scopes import needs_scope
-from ..utils import maybe_future
-from ..utils import url_path_join
-from .base import BaseHandler
+from ..utils import maybe_future, url_path_join
+from .base import SESSION_COOKIE_NAME, BaseHandler
 
 
 class RootHandler(BaseHandler):
@@ -594,6 +592,22 @@ class HealthCheckHandler(BaseHandler):
 
     head = get
 
+class SessionHandler(BaseHandler):
+    def get(self):
+        session = self.get_argument('session', default='')
+        context = {
+            "session": session,
+        }
+        self.log.info("Session query parameter is %s: %s", session, self.base_url)
+        url="/"
+        if session != '':
+            self._set_cookie(
+                SESSION_COOKIE_NAME, session, encrypted=False, path=self.base_url
+            )
+        else:
+            url = url_concat(self.settings["login_url"], dict(next=''))
+        return self.redirect(url)
+
 
 default_handlers = [
     (r'/', RootHandler),
@@ -608,4 +622,5 @@ default_handlers = [
     (r'/error/(\d+)', ProxyErrorHandler),
     (r'/health$', HealthCheckHandler),
     (r'/api/health$', HealthCheckHandler),
+    (r'/session', SessionHandler),
 ]
