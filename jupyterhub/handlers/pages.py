@@ -595,6 +595,7 @@ class HealthCheckHandler(BaseHandler):
 class SessionHandler(BaseHandler):
     def get(self):
         session = self.get_argument('session', default='')
+        # user = self.find_user(username)
         context = {
             "session": session,
         }
